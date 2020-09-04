@@ -1,3 +1,18 @@
+(
+var devices = ServerOptions.devices;
+for (0, devices.size-1, { arg index;
+	devices[index].postln;
+});
+)
+
+(
+s.options.sampleRate = 48000;
+s.options.inDevice = "ZoomAudioD";
+s.options.outDevice = "ZoomAudioD";
+)
+
+
+
 // === Create a sine wave ===
 (
 SynthDef(\firstSynth, {
