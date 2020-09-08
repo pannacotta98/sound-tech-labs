@@ -45,7 +45,9 @@ byte sramBuffer[512]; // SRAM buffer, "ljudminne", 8-bitar
 
 
 
-// setup() är en funktion som körs en, och endast en gång, när Arduinot startas eller resetas. Den används för att initiera variabler, pinmodes etc. Void används då funktionen inte förväntas returnera något.
+// setup() är en funktion som körs en, och endast en gång, när Arduinot startas eller resetas.
+// Den används för att initiera variabler, pinmodes etc.
+// Void används då funktionen inte förväntas returnera något.
 void setup()
 {
   fillSramBufferWithWaveTable(); // Fyll SRAM-bufferten
@@ -97,7 +99,9 @@ void setup()
 
 
 
-// loop() är en funktion som körs om och om igen efter att Arduinot har startats och setup() har initierat Arduinot. Detta är huvudfunktionen och den körs så snabbt/ofta det går enligt klockfrekvensen i Arduinot. Normal klockfrekvens är 16MHz.
+// loop() är en funktion som körs om och om igen efter att Arduinot har startats och setup() har 
+// initierat Arduinot. Detta är huvudfunktionen och den körs så snabbt/ofta det går enligt
+// klockfrekvensen i Arduinot. Normal klockfrekvens är 16MHz.
 void loop()
 {
   // Vänta på samplevärde från analog-till-digital-konverteraren
@@ -105,10 +109,16 @@ void loop()
   while (!sampleFlag) {
   }
 
-  sampleFlag = false;  // Sätt samplingsflaggan till false för att invänta nästa sample
+  bufferIndex += (badc1 != 0) ? badc1 : 1;
+  bufferIndex %= 512;
 
+  byte sramBufferSampleValue = sramBuffer[bufferIndex];
+  // I put in an if to be able to make it quiet hehe
+  if (badc1 != 0) {
+    OCR2A = sramBufferSampleValue;
+  }
   
-
+  sampleFlag = false;  // Sätt samplingsflaggan till false för att invänta nästa sample
 }
 
 
@@ -116,10 +126,45 @@ void loop()
 
 // Funktion för att fylla SRAM buffern med en vågform
 void fillSramBufferWithWaveTable(){
+  // TODO Kolla på det där med fas...
 
-  
-  
-  
+  // SQUARE
+  /*float soundValue = 0;
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    if (i < 255) {
+      soundValue = 192;
+    } else {
+      soundValue = 64;
+    }
+    sramBuffer[i] = soundValue;
+  }*/
+
+  // SAWTOOTH
+  /*float soundValue = 255;
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    soundValue = soundValue - 255.0f / sizeof(sramBuffer);
+    sramBuffer[i] = soundValue;
+  }*/
+
+  // TRIANGLE
+  float soundValue = 255;
+  for (int i = 0; i < sizeof(sramBuffer) / 2; ++i) {
+    soundValue = soundValue - 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = floor(soundValue);
+  }
+  for (int i = sizeof(sramBuffer) / 2; i < sizeof(sramBuffer); ++i) {
+    soundValue = soundValue + 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = ceil(soundValue);
+  }
+
+  // SINE
+  /*float soundValue = 0;
+  float deltaSoundValue = (2.0f * M_PI) / sizeof(sramBuffer);
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    float sinusSample = 127.0f * sin(soundValue) + 127.0f;
+    soundValue += deltaSoundValue;
+    sramBuffer[i] = sinusSample;
+  }*/
 }
 
 
@@ -128,11 +173,12 @@ void fillSramBufferWithWaveTable(){
 // Timer2, interruptservice 62.5 KHz
 // Här samplas analogingång 0 (ljudingången) och analogingång 1 (potentiometern) 16Mhz / 256 / 2 / 2 = 15625 Hz
 ISR(TIMER2_OVF_vect) {
-  div32=!div32; // Dela timer2s frekvens med 2 till 31.25kHz genom att toggla div32 mellan 0 och 1 och gör bara något när div32 är 1
+  div32=!div32; // Dela timer2s frekvens med 2 till 31.25kHz genom att toggla div32 mellan 0 och 1
+                // och gör bara något när div32 är 1
   if (div32){ 
     div16=!div16; //  Dela timer2 igen på samma sätt
     if (div16) {
-    // Sampla kanal 0 och 1 varannan gång så att båda kanalerna samplas i 15.6kHz
+      // Sampla kanal 0 och 1 varannan gång så att båda kanalerna samplas i 15.6kHz
       badc0 = ADCH; // Sampla ADC kanal 0
       sbi(ADMUX,MUX0); // Sätt multiplex till kanal 1 (med hjälp av sbi)
       sampleFlag = true; // Sätt samplingsflaggan till true då ljudet har samplats en gång
