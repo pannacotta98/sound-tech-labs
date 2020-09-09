@@ -112,11 +112,15 @@ void loop()
   bufferIndex += (badc1 != 0) ? badc1 : 1;
   bufferIndex %= 512;
 
-  byte sramBufferSampleValue = sramBuffer[bufferIndex];
-  // I put in an if to be able to make it quiet hehe
-  if (badc1 != 0) {
-    OCR2A = sramBufferSampleValue;
-  }
+  bufferIndex2 += 3 * ((badc1 != 0) ? badc1 : 1);
+  bufferIndex2 %= 512;
+
+  //byte sramBufferSampleValue = sramBuffer[bufferIndex];
+  byte sramBufferSampleValue = 127 + (((sramBuffer[bufferIndex]-127)
+                                     + (sramBuffer[bufferIndex2]-127))) / 2;
+
+  //Serial.println(sramBufferSampleValue);
+  OCR2A = sramBufferSampleValue;
   
   sampleFlag = false;  // Sätt samplingsflaggan till false för att invänta nästa sample
 }
@@ -126,8 +130,6 @@ void loop()
 
 // Funktion för att fylla SRAM buffern med en vågform
 void fillSramBufferWithWaveTable(){
-  // TODO Kolla på det där med fas...
-
   // SQUARE
   /*float soundValue = 0;
   for (int i = 0; i < sizeof(sramBuffer); ++i) {
@@ -147,7 +149,7 @@ void fillSramBufferWithWaveTable(){
   }*/
 
   // TRIANGLE
-  float soundValue = 255;
+  /*float soundValue = 255;
   for (int i = 0; i < sizeof(sramBuffer) / 2; ++i) {
     soundValue = soundValue - 255.0f / (sizeof(sramBuffer) / 2);
     sramBuffer[i] = floor(soundValue);
@@ -155,7 +157,20 @@ void fillSramBufferWithWaveTable(){
   for (int i = sizeof(sramBuffer) / 2; i < sizeof(sramBuffer); ++i) {
     soundValue = soundValue + 255.0f / (sizeof(sramBuffer) / 2);
     sramBuffer[i] = ceil(soundValue);
+  }*/
+
+
+  // TRIANGLE 2
+  /*float soundValue = 255;
+  for (int i = 0; i < sizeof(sramBuffer) / 2; ++i) {
+    soundValue = soundValue - 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = round(soundValue);
   }
+  for (int i = sizeof(sramBuffer) / 2; i < sizeof(sramBuffer); ++i) {
+    soundValue = soundValue + 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = round(soundValue);
+  }*/
+  
 
   // SINE
   /*float soundValue = 0;
@@ -165,6 +180,18 @@ void fillSramBufferWithWaveTable(){
     soundValue += deltaSoundValue;
     sramBuffer[i] = sinusSample;
   }*/
+
+  // MIXED SINE AND SQUARE
+  float soundValue = 0;
+  float deltaSoundValue = (2.0f * M_PI) / sizeof(sramBuffer);
+  
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    float sinusSample = 127.0f * sin(soundValue);
+    soundValue += deltaSoundValue;
+
+    float squareValue = 64 * ((i < 255) ? 1 : -1);
+    sramBuffer[i] = 127.0f + (sinusSample + squareValue) / 2;
+  }
 }
 
 
