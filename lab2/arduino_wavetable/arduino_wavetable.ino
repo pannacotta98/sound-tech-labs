@@ -1,3 +1,5 @@
+// Algot Sandahl
+
 /* Arduino Realtime Audio Processing
    2 ADC 8-Bit Mode
    analog input 0 is used to sample the audio signal
