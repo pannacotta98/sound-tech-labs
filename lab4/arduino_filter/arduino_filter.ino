@@ -43,6 +43,16 @@ byte sramBufferSampleValue; // sparat samplevärde i SRAM buffer
 byte sramBuffer[512]; // SRAM buffer, "ljudminne", 8-bitar
 
 
+// Filter variables
+float alpha;
+float alpha2;
+int lpSample;
+int hpSample;
+// Bandpass
+int bplpSample;
+int bpSample;
+int brSample;
+
 
 
 // setup() är en funktion som körs en, och endast en gång, när Arduinot startas eller resetas. Den används för att initiera variabler, pinmodes etc. Void används då funktionen inte förväntas returnera något.
@@ -105,9 +115,25 @@ void loop()
   while (!sampleFlag) {
   }
 
-  sampleFlag = false;  // Sätt samplingsflaggan till false för att invänta nästa sample
-
+  int oldSample = soundSampleFromADC;
+  soundSampleFromADC = badc0;
+  alpha = (float)map(badc1, 0, 255, 4, 78) / 100.0f;
+  alpha2 = sqrt(alpha);
   
+  lpSample = (1.0f - alpha) * oldSample + alpha * soundSampleFromADC;
+  lpSample  = alpha * oldSample + (1 - alpha) * soundSampleFromADC;
+
+  hpSample = (soundSampleFromADC - 127) - (lpSample - 127) + 127;
+
+  bplpSample = (1.0f - alpha2) * oldSample + alpha2 * soundSampleFromADC;
+  bpSample = (bplpSample - 127) - (lpSample - 127) + 127; 
+
+  brSample = 127 + (soundSampleFromADC - bpSample);
+  
+  OCR2A = brSample;
+  //Serial.println(soundSampleFromADC);
+
+  sampleFlag = false;  // Sätt samplingsflaggan till false för att invänta nästa sample
 
 }
 
