@@ -117,9 +117,8 @@ void loop()
   bufferIndex2 += 3 * ((badc1 != 0) ? badc1 : 1);
   bufferIndex2 %= 512;
 
-  //byte sramBufferSampleValue = sramBuffer[bufferIndex];
-  byte sramBufferSampleValue = 127 + (((sramBuffer[bufferIndex]-127)
-                                     + (sramBuffer[bufferIndex2]-127))) / 2;
+  byte sramBufferSampleValue = sramBuffer[bufferIndex];
+  //byte sramBufferSampleValue = 127 + (((sramBuffer[bufferIndex]-127) + (sramBuffer[bufferIndex2]-127))) / 2;
 
   //Serial.println(sramBufferSampleValue);
   OCR2A = sramBufferSampleValue;
@@ -133,7 +132,7 @@ void loop()
 // Funktion för att fylla SRAM buffern med en vågform
 void fillSramBufferWithWaveTable(){
   // SQUARE
-  /*float soundValue = 0;
+  float soundValue = 0;
   for (int i = 0; i < sizeof(sramBuffer); ++i) {
     if (i < 255) {
       soundValue = 192;
@@ -141,7 +140,7 @@ void fillSramBufferWithWaveTable(){
       soundValue = 64;
     }
     sramBuffer[i] = soundValue;
-  }*/
+  }
 
   // SAWTOOTH
   /*float soundValue = 255;
@@ -184,7 +183,7 @@ void fillSramBufferWithWaveTable(){
   }*/
 
   // MIXED SINE AND SQUARE
-  float soundValue = 0;
+  /*float soundValue = 0;
   float deltaSoundValue = (2.0f * M_PI) / sizeof(sramBuffer);
   
   for (int i = 0; i < sizeof(sramBuffer); ++i) {
@@ -193,7 +192,7 @@ void fillSramBufferWithWaveTable(){
 
     float squareValue = 64 * ((i < 255) ? 1 : -1);
     sramBuffer[i] = 127.0f + (sinusSample + squareValue) / 2;
-  }
+  }*/
 }
 
 

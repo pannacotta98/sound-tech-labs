@@ -34,7 +34,6 @@ volatile byte badc1; // Det samplade potentiometervärdet, kanal 1
 volatile byte ibb; // Global interruptvariabel
 
 int bufferIndex; // Index i SRAM buffer
-int bufferIndex2; // Alternativ index
 
 int soundSampleFromADC; // Variabel för att läsa samplevärde från ADCn
 int soundSampleFromSramBuffer; // Variabel för att läsa samplevärde från SRAM buffer
@@ -46,11 +45,14 @@ byte sramBuffer[512]; // SRAM buffer, "ljudminne", 8-bitar
 // Filter variables
 float alpha;
 float alpha2;
+int oldSample;
 int lpSample;
 int hpSample;
+
 // Bandpass
 int bplpSample;
 int bpSample;
+
 int brSample;
 
 
@@ -115,23 +117,35 @@ void loop()
   while (!sampleFlag) {
   }
 
-  int oldSample = soundSampleFromADC;
+  // Wave table synthesis
+  int p = 20;
+  bufferIndex += p;
+  bufferIndex %= 512;
+
+
   soundSampleFromADC = badc0;
+  //int currentSample = sramBuffer[bufferIndex];
+  int currentSample = soundSampleFromADC;
+  
+  // Filters
   alpha = (float)map(badc1, 0, 255, 4, 78) / 100.0f;
+  //alpha = badc1 / 255.0f;
   alpha2 = sqrt(alpha);
   
-  lpSample = (1.0f - alpha) * oldSample + alpha * soundSampleFromADC;
-  lpSample  = alpha * oldSample + (1 - alpha) * soundSampleFromADC;
+  lpSample = (1.0f - alpha) * oldSample + alpha * currentSample;
 
-  hpSample = (soundSampleFromADC - 127) - (lpSample - 127) + 127;
+  hpSample = (currentSample - 127) - (lpSample - 127) + 127;
 
-  bplpSample = (1.0f - alpha2) * oldSample + alpha2 * soundSampleFromADC;
+  bplpSample = (1.0f - alpha2) * oldSample + alpha2 * currentSample;
   bpSample = (bplpSample - 127) - (lpSample - 127) + 127; 
 
-  brSample = 127 + (soundSampleFromADC - bpSample);
-  
-  OCR2A = brSample;
-  //Serial.println(soundSampleFromADC);
+  brSample = 127 + (currentSample - bpSample);
+
+  // Set output
+  OCR2A = lpSample;
+  //Serial.println(OCR2A);
+
+  oldSample = OCR2A;
 
   sampleFlag = false;  // Sätt samplingsflaggan till false för att invänta nästa sample
 
@@ -142,10 +156,68 @@ void loop()
 
 // Funktion för att fylla SRAM buffern med en vågform
 void fillSramBufferWithWaveTable(){
+  // SQUARE
+  /*float soundValue = 0;
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    if (i < 255) {
+      soundValue = 192;
+    } else {
+      soundValue = 64;
+    }
+    sramBuffer[i] = soundValue;
+  }*/
 
+  // SAWTOOTH
+  /*float soundValue = 255;
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    soundValue = soundValue - 255.0f / sizeof(sramBuffer);
+    sramBuffer[i] = soundValue;
+  }*/
+
+  // TRIANGLE
+  /*float soundValue = 255;
+  for (int i = 0; i < sizeof(sramBuffer) / 2; ++i) {
+    soundValue = soundValue - 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = floor(soundValue);
+  }
+  for (int i = sizeof(sramBuffer) / 2; i < sizeof(sramBuffer); ++i) {
+    soundValue = soundValue + 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = ceil(soundValue);
+  }*/
+
+
+  // TRIANGLE 2
+  /*float soundValue = 255;
+  for (int i = 0; i < sizeof(sramBuffer) / 2; ++i) {
+    soundValue = soundValue - 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = round(soundValue);
+  }
+  for (int i = sizeof(sramBuffer) / 2; i < sizeof(sramBuffer); ++i) {
+    soundValue = soundValue + 255.0f / (sizeof(sramBuffer) / 2);
+    sramBuffer[i] = round(soundValue);
+  }*/
   
+
+  // SINE
+  float soundValue = 0;
+  float deltaSoundValue = (2.0f * M_PI) / sizeof(sramBuffer);
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    float sinusSample = 127.0f * sin(soundValue) + 127.0f;
+    soundValue += deltaSoundValue;
+    sramBuffer[i] = sinusSample;
+  }
+
+  // MIXED SINE AND SQUARE
+  /*float soundValue = 0;
+  float deltaSoundValue = (2.0f * M_PI) / sizeof(sramBuffer);
   
-  
+  for (int i = 0; i < sizeof(sramBuffer); ++i) {
+    float sinusSample = 127.0f * sin(soundValue);
+    soundValue += deltaSoundValue;
+
+    float squareValue = 64 * ((i < 255) ? 1 : -1);
+    sramBuffer[i] = 127.0f + (sinusSample + squareValue) / 2;
+  }*/
 }
 
 
