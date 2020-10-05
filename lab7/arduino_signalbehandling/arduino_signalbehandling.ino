@@ -45,9 +45,10 @@ byte sramBuffer[512]; // SRAM buffer, "ljudminne", 8-bitar
 
 
 
-// setup() är en funktion som körs en, och endast en gång, när Arduinot startas eller resetas. Den används för att initiera variabler, pinmodes etc. Void används då funktionen inte förväntas returnera något.
-void setup()
-{
+// setup() är en funktion som körs en, och endast en gång, när Arduinot startas eller resetas.
+// Den används för att initiera variabler, pinmodes etc. Void används då funktionen inte 
+// förväntas returnera något.
+void setup() {
   fillSramBufferWithWaveTable(); // Fyll SRAM-bufferten
   Serial.begin(57600);        // connect to the serial port
   // Atmega32 har tre register för ADC - ADCSRA , ADMUX and ADCW
@@ -97,25 +98,77 @@ void setup()
 
 
 
-// loop() är en funktion som körs om och om igen efter att Arduinot har startats och setup() har initierat Arduinot. Detta är huvudfunktionen och den körs så snabbt/ofta det går enligt klockfrekvensen i Arduinot. Normal klockfrekvens är 16MHz.
-void loop()
-{
+// loop() är en funktion som körs om och om igen efter att Arduinot har startats och setup() har
+// initierat Arduinot. Detta är huvudfunktionen och den körs så snabbt/ofta det går enligt
+// klockfrekvensen i Arduinot. Normal klockfrekvens är 16MHz.
+void loop() {
   // Vänta på samplevärde från analog-till-digital-konverteraren
   // en samplingscykel 15625 KHz = 65 mikrosekunder 
   while (!sampleFlag) {
   }
 
+  // == Overdrive ==
+  /*soundSampleFromADC = badc0 - 127;
+  float potVal = (float)badc1 / 4.0f;
+  if (potVal < 1) {
+    potVal = 1;
+  }
+
+  soundSampleFromADC *= potVal;
+  if (soundSampleFromADC > 127) {
+    soundSampleFromADC = 127;
+  } else if (soundSampleFromADC < -127) {
+    soundSampleFromADC = -127;
+  }
+  sramBufferSampleValue = soundSampleFromADC + 127;*/
+
+
+  // == Flanger ==
+  /*soundSampleFromADC = badc0;
+  sramBuffer[bufferIndex] = soundSampleFromADC;
+  soundSampleFromSramBuffer = sramBuffer[bufferIndex2];
+
+  ++bufferIndex;
+  bufferIndex %= 512;
+  bufferIndex2 = (bufferIndex - 2 * badc1) & 511;
+  // FIXME Detta blev ju ganska misslyckat
+  // bufferIndex2 = (int)((float)bufferIndex - (127.0f * sin(2.0f * M_PI * bufferIndex / sizeof(sramBuffer)) + 127.0f)) & 511;
+  // Serial.println(bufferIndex2 - bufferIndex);
+  // Serial.println((127.0f * sin(2.0f * M_PI * bufferIndex / sizeof(sramBuffer)) + 127.0f));
+  sramBufferSampleValue = ((soundSampleFromADC - 127) + (soundSampleFromSramBuffer - 127)) / 2 + 127;*/
+
+
+  // == Reverb ==
+  soundSampleFromSramBuffer = -1 * ((int)sramBuffer[bufferIndex] - 127);
+  float mult = (float)map(badc1, 0, 255, 0, 200) / 255;
+  soundSampleFromSramBuffer = (float)soundSampleFromSramBuffer * mult;
+
+  soundSampleFromADC = badc0 - 127;
+  soundSampleFromSramBuffer += soundSampleFromADC;
+
+  if (soundSampleFromSramBuffer > 127) {
+    soundSampleFromSramBuffer = 127;
+  } else if (soundSampleFromSramBuffer < -127) {
+    soundSampleFromSramBuffer = -127;
+  }
+
+  sramBuffer[bufferIndex] = soundSampleFromSramBuffer + 127;
+  ++bufferIndex;
+  bufferIndex %= 512;
+
+  sramBufferSampleValue = soundSampleFromSramBuffer + 127;
+
+  OCR2A = sramBufferSampleValue;
+  // Serial.println(OCR2A);
+
   sampleFlag = false;  // Sätt samplingsflaggan till false för att invänta nästa sample
-
-  
-
 }
 
 
 
 
 // Funktion för att fylla SRAM buffern med en vågform
-void fillSramBufferWithWaveTable(){
+void fillSramBufferWithWaveTable() {
 
   
   
