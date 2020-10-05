@@ -1,3 +1,5 @@
+// Algot Sandahl
+
 /* Arduino Realtime Audio Processing
    2 ADC 8-Bit Mode
    analog input 0 is used to sample the audio signal
@@ -143,6 +145,7 @@ void loop()
 
   // Set output
   OCR2A = lpSample;
+  //OCR2A = currentSample;
   //Serial.println(OCR2A);
 
   oldSample = OCR2A;
@@ -168,11 +171,11 @@ void fillSramBufferWithWaveTable(){
   }*/
 
   // SAWTOOTH
-  /*float soundValue = 255;
+  float soundValue = 255;
   for (int i = 0; i < sizeof(sramBuffer); ++i) {
     soundValue = soundValue - 255.0f / sizeof(sramBuffer);
     sramBuffer[i] = soundValue;
-  }*/
+  }
 
   // TRIANGLE
   /*float soundValue = 255;
@@ -199,13 +202,13 @@ void fillSramBufferWithWaveTable(){
   
 
   // SINE
-  float soundValue = 0;
+  /*float soundValue = 0;
   float deltaSoundValue = (2.0f * M_PI) / sizeof(sramBuffer);
   for (int i = 0; i < sizeof(sramBuffer); ++i) {
     float sinusSample = 127.0f * sin(soundValue) + 127.0f;
     soundValue += deltaSoundValue;
     sramBuffer[i] = sinusSample;
-  }
+  }*/
 
   // MIXED SINE AND SQUARE
   /*float soundValue = 0;
