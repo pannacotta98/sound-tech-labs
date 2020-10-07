@@ -131,10 +131,6 @@ void loop() {
   ++bufferIndex;
   bufferIndex %= 512;
   bufferIndex2 = (bufferIndex - 2 * badc1) & 511;
-  // FIXME Detta blev ju ganska misslyckat
-  // bufferIndex2 = (int)((float)bufferIndex - (127.0f * sin(2.0f * M_PI * bufferIndex / sizeof(sramBuffer)) + 127.0f)) & 511;
-  // Serial.println(bufferIndex2 - bufferIndex);
-  // Serial.println((127.0f * sin(2.0f * M_PI * bufferIndex / sizeof(sramBuffer)) + 127.0f));
   sramBufferSampleValue = ((soundSampleFromADC - 127) + (soundSampleFromSramBuffer - 127)) / 2 + 127;*/
 
 
@@ -146,6 +142,7 @@ void loop() {
   soundSampleFromADC = badc0 - 127;
   soundSampleFromSramBuffer += soundSampleFromADC;
 
+  // soundSampleFromSramBuffer /= 2;
   if (soundSampleFromSramBuffer > 127) {
     soundSampleFromSramBuffer = 127;
   } else if (soundSampleFromSramBuffer < -127) {
